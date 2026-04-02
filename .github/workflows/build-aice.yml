@@ -1,37 +1,56 @@
-# MoJ Repository – AI Coding Standards
+# Rebuild AICE artifacts from source/standards.yaml
+# Run on push to main (and optionally to source/ or scripts/) or on workflow_dispatch for CI/CD.
+name: Build AICE
 
-This repository follows **Ministry of Justice (MoJ) Technical Guidance** and Justice Digital standards. Apply these when generating or modifying code.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'source/**'
+      - 'scripts/**'
+  workflow_dispatch:
 
-## Critical
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-- **Never** upload PII (personally identifiable information) or secrets to this repo.
-- Use GitHub for version control; feature branches; commits: `type(scope): description`; mandatory review before merge.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-## Code quality
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-- Correct, clear, concise (in that order). Tests required for fixes and new features.
-- Meaningful names; avoid globals; comment only when necessary (explain why, not how).
-- Prefer composition over inheritance; small, single-responsibility units.
-- Follow language style guides (e.g. PEP 8 for Python). Max line length 120.
+      - name: Build AICE artifacts
+        run: python scripts/build_aice.py
 
-## Design & APIs
+      - name: Show generated artifact summary
+        run: |
+          echo "Generated artifacts:"
+          ls -la .cursor/rules/ 2>/dev/null || true
+          test -f .github/copilot-instructions.md && echo ".github/copilot-instructions.md OK"
+          test -f AGENTS.md && echo "AGENTS.md OK"
+          test -f docs/AICE-Standards.md && echo "docs/AICE-Standards.md OK"
 
-- SOLID principles; versioned APIs (e.g. /v1/...); OpenAPI/Swagger; RESTful.
+      - name: Upload AICE artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aice-artifacts
+          path: |
+            .cursor/rules/
+            .github/copilot-instructions.md
+            AGENTS.md
+            docs/AICE-Standards.md
 
-## Security
-
-- Parameterised queries; validate inputs; secure auth (OAuth 2.0/JWT); encrypt sensitive data; keep dependencies updated.
-
-## Frontend (when touching HTML/CSS/JS/TS)
-
-- Semantic HTML; accessibility (WCAG 2.2 AA); GOV.UK Design System where applicable; no inline styles; BEM/CSS Modules.
-
-## Licensing
-
-- MoJ uses MIT; Crown Copyright (Ministry of Justice). Include LICENCE in repo.
-
-## AI use
-
-- Use only approved MoJ AI tools; review all AI-generated output; no sensitive data into AI unless approved.
-
-Source: [MoJ Technical Guidance](https://technical-guidance.service.justice.gov.uk/).
+      # Optional: commit generated files back to the repo (uncomment if you want CI to push)
+      # - name: Commit generated AICE files
+      #   if: steps.diff.outcome == 'failure'
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git add .cursor/rules/ .github/copilot-instructions.md AGENTS.md docs/AICE-Standards.md
+      #     git commit -m "chore: regenerate AICE artifacts from source" || true
+      #     git push
