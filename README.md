@@ -2,6 +2,21 @@
 
 Ministry of Justice (UK) **AI Coding Environment standards** for use with GitHub Copilot, Cursor, Claude Code, AWS Kiro, OpenAI Codex, and other approved MoJ AI coding tools. This repo is the single source of truth and build pipeline for MoJ coding standards consumed by AI assistants.
 
+## Why this matters
+
+This repository turns MoJ AI policy into practical, reusable instruction files that teams can apply consistently across repositories and tools.
+
+Without this, standards are likely to drift between teams and products. With this repo, policy requirements are encoded once in `source/standards.yaml` and then generated into each tool's expected format in `dist/`.
+
+The policy context is:
+
+- **Approved AI coding tool portfolio**: the MoJ [AI Coding Assistant Strategy](https://ministryofjustice.github.io/octo-strategic-docs/draft/ai-coding-assistant-strategy.html) defines which coding assistants are approved for use.
+- **Approved AI platform access model**: the [AI Platform Access Policy](https://ministryofjustice.github.io/octo-strategic-docs/draft/ai-platform-access-policy.html) defines where LLM access must happen (Justice AI Gateway or Azure AI Foundry), and prohibits unmanaged direct API usage.
+- **Permitted LLM model controls**: the [Permitted LLM AI Models Policy](https://ministryofjustice.github.io/octo-strategic-docs/draft/permitted-llm-ai-models-policy.html) defines model approval states and usage restrictions.
+- **Safe use and accountability expectations**: the [AI Platform Access Policy](https://ministryofjustice.github.io/octo-strategic-docs/draft/ai-platform-access-policy.html) and [MOJ Engineering AI Governance Framework](https://technical-guidance.service.justice.gov.uk/documentation/governance/ai-governance-framework.html) set requirements for data handling, validation of AI outputs, transparency, and delivery team accountability.
+
+In short: this repo helps teams apply policy-aligned defaults quickly, while still keeping accountability with engineers and service teams.
+
 ## What's in this repo
 
 | Item | Purpose |
@@ -28,14 +43,25 @@ Per the [MoJ AI Coding Assistant Strategy](https://ministryofjustice.github.io/o
 
 ---
 
-## For repo owners: adding MoJ AICE standards to your repo
+## How to use this as a developer or repo owner
 
-Copy the relevant files from `dist/` into your repository. You only need the files for the tools your team uses.
+Use this repository as a source of ready-to-copy AI instruction files for MoJ-approved tools, whether you are an individual developer setting up a codebase or a repo owner maintaining standards across a team.
 
-### Copy all tools at once
+### Step 1: Pick the tools you or your team uses
+
+| File in this repo (`dist/`) | Tool | Put this file in your repo |
+|------|------|---------------------|
+| `.github/copilot-instructions.md` | GitHub Copilot, Codex | `.github/copilot-instructions.md` |
+| `CLAUDE.md` | Claude Code | `CLAUDE.md` |
+| `AGENTS.md` | OpenAI Codex, Jules, OpenCode | `AGENTS.md` |
+| `.cursor/rules/*.mdc` | Cursor | `.cursor/rules/*.mdc` |
+| `.kiro/steering/*.md` | AWS Kiro | `.kiro/steering/*.md` |
+
+### Step 2: Copy generated files from `dist/`
+
+Run from the root of the repository you are working in:
 
 ```bash
-# From the root of your target repo
 AICE_REPO=https://raw.githubusercontent.com/ministryofjustice/AICodingStandards/main/dist
 
 # GitHub Copilot / Codex
@@ -61,7 +87,7 @@ for f in moj-global moj-coding-standards moj-frontend moj-python moj-ruby; do
 done
 ```
 
-Or clone this repo and copy `dist/` manually:
+Alternative: clone this repo and copy from `dist/` manually.
 
 ```bash
 git clone https://github.com/ministryofjustice/AICodingStandards.git
@@ -72,23 +98,40 @@ cp    AICodingStandards/dist/AGENTS.md your-repo/
 cp    AICodingStandards/dist/CLAUDE.md your-repo/
 ```
 
-### What each file does
+### Step 3: Merge if files already exist
 
-| File | Tool | How it is picked up |
-|------|------|---------------------|
-| `.github/copilot-instructions.md` | GitHub Copilot, Codex | Automatically by GitHub Copilot for any repo it's enabled on |
-| `CLAUDE.md` | Claude Code | Automatically when Claude Code opens the repo |
-| `AGENTS.md` | OpenAI Codex, Jules, OpenCode | Automatically from the repo root |
-| `.cursor/rules/*.mdc` | Cursor | Automatically applied (global rules always; language rules by file match) |
-| `.kiro/steering/*.md` | AWS Kiro | Applied per the `inclusion` frontmatter (`always` or `fileMatch`) |
+If the repository already has instruction files, merge content instead of overwriting. Keep existing service context (architecture, local build commands, deployment notes) with the imported MoJ standards.
 
-### Merging with existing instruction files
+### Step 4: Keep your repository up to date
 
-If your repo already has any of these files, merge rather than overwrite. Keep your repo-specific context (architecture, build commands, etc.) alongside the MoJ standards blocks so they can be updated independently.
+Re-copy files from `dist/` when this repository updates. Generated files in `dist/` are the supported files for teams and developers to consume.
 
-### Keeping up to date
+## How to build the content for others to consume
 
-Re-run the copy commands above whenever standards change. CI rebuilds `dist/` automatically when `source/standards.yaml` is updated.
+Build and verification instructions are in [BUILD.md](BUILD.md).
+
+## How to submit changes to this repository
+
+### What to change
+
+1. Update standards in `source/standards.yaml`.
+2. Only edit `scripts/build_aice.py` when changing generation logic or adding a new output format.
+3. Do not hand-edit files under `dist/`.
+
+### Change workflow
+
+1. Create a branch from `main`.
+2. Make your change in `source/standards.yaml` (and script changes if required).
+3. Follow [BUILD.md](BUILD.md) to run the local build and verify generated files.
+4. Commit source and regenerated outputs together:
+   - `source/standards.yaml`
+   - updated `dist/` files
+   - updated `docs/AICE-Standards.md`
+5. Use commit format: `type(scope): description` (example: `feat(yaml): add policy links`).
+6. Open a pull request to `main` with a short summary of:
+   - what policy or standard changed
+   - why it changed
+   - which generated outputs were updated
 
 ---
 
@@ -115,36 +158,6 @@ Standards are derived from:
 - [ministryofjustice GitHub](https://github.com/ministryofjustice)
 
 For how these and other MoJ repos are used to discover and maintain standards, see [docs/Discovering-MoJ-Standards.md](docs/Discovering-MoJ-Standards.md).
-
----
-
-## Rebuilding AICE artifacts
-
-All generated artifacts are rebuilt from `source/standards.yaml`. **Do not edit generated files directly.**
-
-### Local build
-
-```bash
-pip install -r requirements.txt
-python scripts/build_aice.py
-```
-
-Generated/updated:
-
-- `dist/`  ← copy this to your repos
-- `docs/AICE-Standards.md`
-
-### CI/CD (GitHub Actions)
-
-- Workflow: **`.github/workflows/build-aice.yml`**
-- Triggers: push to `main` that touches `source/**` or `scripts/**`, or manual **Run workflow**.
-- Uploads the generated `dist/` as the **aice-artifacts** artifact.
-
-## Updating standards
-
-1. Edit **`source/standards.yaml`**.
-2. Run `python scripts/build_aice.py` locally, or push and let CI rebuild.
-3. Commit `source/standards.yaml`, the updated `dist/` contents, and `docs/AICE-Standards.md`.
 
 ## Licence
 
