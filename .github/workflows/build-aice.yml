@@ -29,10 +29,8 @@ jobs:
 
       - name: Show generated artifact summary
         run: |
-          echo "Generated artifacts:"
-          ls -la .cursor/rules/ 2>/dev/null || true
-          test -f .github/copilot-instructions.md && echo ".github/copilot-instructions.md OK"
-          test -f AGENTS.md && echo "AGENTS.md OK"
+          echo "Generated artifacts in dist/:"
+          find dist/ -type f | sort
           test -f docs/AICE-Standards.md && echo "docs/AICE-Standards.md OK"
 
       - name: Upload AICE artifacts
@@ -40,9 +38,7 @@ jobs:
         with:
           name: aice-artifacts
           path: |
-            .cursor/rules/
-            .github/copilot-instructions.md
-            AGENTS.md
+            dist/
             docs/AICE-Standards.md
 
       # Optional: commit generated files back to the repo (uncomment if you want CI to push)

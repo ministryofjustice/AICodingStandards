@@ -1,7 +1,7 @@
 ---
-description: MoJ Python-specific principles
-globs: ["**/*.py"]
-alwaysApply: false
+inclusion: fileMatch
+fileMatchPattern: '**/*.py'
+description: MoJ Python-specific standards
 ---
 
 # MoJ Python Standards
@@ -11,6 +11,8 @@ alwaysApply: false
 Don't swallow unexpected or base-type exceptions in libraries; let them propagate to the application.
 Always specify exception type in try/except unless there is good reason not to.
 
+
 ## Python – PEP 8 and Zen of Python
 
 Follow PEP 8. Consider the Zen of Python (readability, explicit over implicit, simple over complex).
+
