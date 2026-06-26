@@ -1,37 +1,49 @@
-# MoJ Repository – AI Coding Standards
+# MoJ AICodingStandards – Contributor Instructions
 
-This repository follows **Ministry of Justice (MoJ) Technical Guidance** and Justice Digital standards. Apply these when generating or modifying code.
+This repo is a **build pipeline**, not a coding environment. It reads `source/standards.yaml` and generates AI instruction files for all MoJ-approved AICE tools, outputting them to `dist/` for repo owners to copy.
 
-## Critical
+## Build
 
-- **Never** upload PII (personally identifiable information) or secrets to this repo.
-- Use GitHub for version control; feature branches; commits: `type(scope): description`; mandatory review before merge.
+```bash
+pip install -r requirements.txt
+python scripts/build_aice.py
+```
 
-## Code quality
+Verify with:
 
-- Correct, clear, concise (in that order). Tests required for fixes and new features.
-- Meaningful names; avoid globals; comment only when necessary (explain why, not how).
-- Prefer composition over inheritance; small, single-responsibility units.
-- Follow language style guides (e.g. PEP 8 for Python). Max line length 120.
+```bash
+find dist/ -type f | sort
+```
 
-## Design & APIs
+## Architecture
 
-- SOLID principles; versioned APIs (e.g. /v1/...); OpenAPI/Swagger; RESTful.
+```
+source/standards.yaml   ← single source of truth; edit here
+        ↓
+scripts/build_aice.py   ← reads YAML, renders each tool's format
+        ↓
+dist/
+  .github/copilot-instructions.md   (GitHub Copilot / Codex)
+  .cursor/rules/*.mdc               (Cursor)
+  AGENTS.md                         (OpenAI Codex / Jules / OpenCode)
+  CLAUDE.md                         (Claude Code)
+  .kiro/steering/*.md               (AWS Kiro)
 
-## Security
+docs/AICE-Standards.md             ← human-readable reference (not for dist)
+```
 
-- Parameterised queries; validate inputs; secure auth (OAuth 2.0/JWT); encrypt sensitive data; keep dependencies updated.
+CI (`.github/workflows/build-aice.yml`) rebuilds `dist/` automatically on push to `main` when `source/**` or `scripts/**` change.
 
-## Frontend (when touching HTML/CSS/JS/TS)
+## Key conventions
 
-- Semantic HTML; accessibility (WCAG 2.2 AA); GOV.UK Design System where applicable; no inline styles; BEM/CSS Modules.
+- **Never edit files in `dist/` directly.** They are fully regenerated on every build (`dist/` is deleted and recreated). All changes must go into `source/standards.yaml`.
+- **`standards.yaml` structure:** top-level keys are `global_rules`, `principles`, `coding_standards`, `frontend_standards`, `naming_standards`, `licensing_standards`, `ai_governance`, `python_standards`, `ruby_standards`. Each entry needs `id`, `title`, `source_url`, and `content`. Optional `globs` field for file-type scoping.
+- **Adding a new AICE tool:** add a `write_<toolname>()` function in `build_aice.py` that writes to `dist/`, call it from `main()`, and document the output path in the README.
+- Commit format: `type(scope): description` — e.g. `feat(yaml): add java standards`, `fix(kiro): correct fileMatchPattern`.
+- Python target: 3.11. Follow PEP 8; specify exception types in `try/except`.
 
-## Licensing
+## Canonical sources
 
-- MoJ uses MIT; Crown Copyright (Ministry of Justice). Include LICENCE in repo.
-
-## AI use
-
-- Use only approved MoJ AI tools; review all AI-generated output; no sensitive data into AI unless approved.
-
-Source: [MoJ Technical Guidance](https://technical-guidance.service.justice.gov.uk/).
+- [MoJ OCTO Strategic Policies](https://ministryofjustice.github.io/octo-strategic-docs) — CTO-level, authoritative
+- [MoJ Technology Radar](https://tech-radar.justice.gov.uk/) — approved/prohibited technology choices
+- [MoJ Technical Guidance](https://technical-guidance.service.justice.gov.uk/)
